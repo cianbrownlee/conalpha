@@ -1,0 +1,137 @@
+/**
+ * App.css
+ * Layout and styles for the top-level app shell — header, nav tabs, and
+ * main content area. Component-specific styles live in their own files.
+ */
+
+/* ---------------------------------------------------------------------------
+   APP SHELL
+--------------------------------------------------------------------------- */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ---------------------------------------------------------------------------
+   HEADER
+--------------------------------------------------------------------------- */
+
+.app__header {
+  background: #060810;
+  border-bottom: 1px solid var(--color-border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.app__header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+}
+
+.app__wordmark {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.app__title {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  color: var(--color-accent);
+  line-height: 1;
+}
+
+.app__subtitle {
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  line-height: 1;
+}
+
+.app__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ---------------------------------------------------------------------------
+   TAB NAVIGATION
+--------------------------------------------------------------------------- */
+
+.app__nav {
+  display: flex;
+  padding: 0 var(--space-6);
+  gap: 2px;
+}
+
+.app__nav-tab {
+  padding: 8px 18px;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+  position: relative;
+  bottom: -1px; /* sit on top of the header border-bottom */
+}
+
+.app__nav-tab:hover {
+  color: var(--color-text-secondary);
+}
+
+.app__nav-tab--active {
+  color: var(--color-accent);
+  background: var(--color-bg-base);
+  border-color: var(--color-border-subtle);
+  border-bottom-color: var(--color-bg-base); /* hides the header border beneath it */
+}
+
+/* ---------------------------------------------------------------------------
+   MAIN CONTENT AREA
+--------------------------------------------------------------------------- */
+
+.app__main {
+  flex: 1;
+  padding: var(--space-6);
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ---------------------------------------------------------------------------
+   EMPTY STATE (first visit, no alphabets yet)
+--------------------------------------------------------------------------- */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 60vh;
+  gap: var(--space-5);
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.empty-state__heading {
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  color: var(--color-accent);
+}
+
+.empty-state__body {
+  color: var(--color-text-secondary);
+  line-height: 1.8;
+  font-size: 0.95rem;
+}
