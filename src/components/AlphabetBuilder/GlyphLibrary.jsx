@@ -1,57 +1,116 @@
-// Grid of saved glyphs for the active alphabet; click to reload into canvas for redrawing.
+// Grid of large glyph cards for one alphabet section. Each card shows the glyph
+// image and its phoneme label. Hover reveals Redraw and Delete controls.
+// Cards can be reordered by dragging — drop between cards to insert at that position.
 
+import { useRef, useState } from "react";
 import GlyphRenderer from "../shared/GlyphRenderer";
 
-export default function GlyphLibrary({ glyphs, selectedGlyphId, onSelectGlyph, onDeleteGlyph }) {
-  if (glyphs.length === 0) {
-    return (
-      <div className="glyph-library glyph-library--empty">
-        <p className="glyph-library__empty-message">
-          No glyphs yet — draw something and hit Save.
-        </p>
-      </div>
+export default function GlyphLibrary({ glyphs, alphabetId, onSelectGlyph, onDeleteGlyph, onAddGlyph, onReorderGlyphs }) {
+  const dragSrcId = useRef(null);
+  const [draggingId, setDraggingId] = useState(null);
+  const [dropTarget, setDropTarget] = useState(null);
+
+  function handleDragStart(glyphId) {
+    dragSrcId.current = glyphId;
+    setDraggingId(glyphId);
+  }
+
+  function handleDragOver(e, glyphId) {
+    e.preventDefault();
+    if (!dragSrcId.current || dragSrcId.current === glyphId) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const before = e.clientX < rect.left + rect.width / 2;
+    setDropTarget(prev =>
+      prev?.id === glyphId && prev?.before === before ? prev : { id: glyphId, before }
     );
+  }
+
+  function handleDragLeave(e) {
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setDropTarget(null);
+    }
+  }
+
+  function handleDrop(targetGlyphId) {
+    if (!dragSrcId.current || dragSrcId.current === targetGlyphId) {
+      reset();
+      return;
+    }
+    const srcIdx = glyphs.findIndex(g => g.id === dragSrcId.current);
+    const reordered = [...glyphs];
+    const [moved] = reordered.splice(srcIdx, 1);
+    const newDstIdx = reordered.findIndex(g => g.id === targetGlyphId);
+    const insertIdx = dropTarget?.before ? newDstIdx : newDstIdx + 1;
+    reordered.splice(insertIdx, 0, moved);
+    onReorderGlyphs(alphabetId, reordered);
+    reset();
+  }
+
+  function handleDragEnd() {
+    reset();
+  }
+
+  function reset() {
+    dragSrcId.current = null;
+    setDraggingId(null);
+    setDropTarget(null);
   }
 
   return (
     <div className="glyph-library">
-      <h3 className="glyph-library__heading">
-        Saved glyphs <span className="glyph-library__count">({glyphs.length})</span>
-      </h3>
       <div className="glyph-library__grid">
-        {glyphs.map((glyph) => (
-          <div
-            key={glyph.id}
-            className={`glyph-library__item${selectedGlyphId === glyph.id ? " glyph-library__item--selected" : ""}`}
-          >
-            {/* Main click target: load this glyph into the canvas for redrawing */}
-            <button
-              className="glyph-library__select-btn"
-              onClick={() => onSelectGlyph(glyph.id)}
-              title={glyph.label ? `/${glyph.label}/ — click to redraw` : "Click to redraw"}
-            >
-              <GlyphRenderer glyph={glyph} phoneme={glyph.label || "?"} size={56} />
-            </button>
+        {glyphs.map((glyph) => {
+          const isDragging    = draggingId === glyph.id;
+          const isDropBefore  = dropTarget?.id === glyph.id && dropTarget.before;
+          const isDropAfter   = dropTarget?.id === glyph.id && !dropTarget.before;
 
-            {/* Phoneme badge — shown only if a mapping exists */}
-            {glyph.label && (
-              <span className="glyph-library__phoneme-badge">{glyph.label}</span>
-            )}
-
-            {/* Delete button — sits in the corner of the item */}
-            <button
-              className="glyph-library__delete-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteGlyph(glyph.id);
-              }}
-              title="Delete this glyph"
-              aria-label={`Delete glyph${glyph.label ? ` for /${glyph.label}/` : ""}`}
+          return (
+            <div
+              key={glyph.id}
+              className={[
+                "glyph-card",
+                isDragging   ? "glyph-card--dragging"     : "",
+                isDropBefore ? "glyph-card--drop-before"  : "",
+                isDropAfter  ? "glyph-card--drop-after"   : "",
+              ].filter(Boolean).join(" ")}
+              draggable
+              onDragStart={() => handleDragStart(glyph.id)}
+              onDragOver={(e) => handleDragOver(e, glyph.id)}
+              onDragLeave={handleDragLeave}
+              onDrop={() => handleDrop(glyph.id)}
+              onDragEnd={handleDragEnd}
             >
-              ✕
-            </button>
-          </div>
-        ))}
+              <div className="glyph-card__image-area">
+                <GlyphRenderer glyph={glyph} phoneme={glyph.label || "?"} size={80} />
+
+                <div className="glyph-card__overlay">
+                  <button
+                    className="button button--ghost button--small"
+                    onClick={() => onSelectGlyph(glyph.id)}
+                  >
+                    Redraw
+                  </button>
+                  <button
+                    className="button button--ghost button--small button--danger"
+                    onClick={() => onDeleteGlyph(glyph.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+
+              <div className="glyph-card__label">
+                {glyph.label ? `/${glyph.label}/` : <span className="glyph-card__label--unmapped">unmapped</span>}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Add glyph card — always last, not draggable */}
+        <button className="glyph-card glyph-card--add" onClick={onAddGlyph} title="Draw a new glyph">
+          <span className="glyph-card__add-icon">+</span>
+          <span className="glyph-card__add-label">Add glyph</span>
+        </button>
       </div>
     </div>
   );

@@ -1,5 +1,7 @@
 // Reusable dropdown for creating, renaming, deleting, and switching alphabets.
 // Manages no local state — all actions fire callbacks to the container.
+// Pass compact={true} to hide Export/Import (used in PhonemeMapper).
+// Pass switchOnly={true} to show only the dropdown — no create/rename/delete buttons.
 
 import { useRef } from "react";
 
@@ -12,6 +14,8 @@ export default function AlphabetSelector({
   onDelete,
   onExport,
   onImport,
+  compact = false,
+  switchOnly = false,
 }) {
   const importInputRef = useRef(null);
   const activeAlphabet = alphabets.find((a) => a.id === activeAlphabetId) ?? null;
@@ -47,6 +51,9 @@ export default function AlphabetSelector({
   return (
     <div className="alphabet-selector">
       <div className="alphabet-selector__main-row">
+        {compact && (
+          <span className="alphabet-selector__label">Alphabet</span>
+        )}
         <select
           className="alphabet-selector__dropdown"
           value={activeAlphabetId ?? ""}
@@ -60,55 +67,61 @@ export default function AlphabetSelector({
           ))}
         </select>
 
-        <button
-          className="button button--icon"
-          onClick={handleCreate}
-          title="New alphabet"
-          aria-label="Create new alphabet"
-        >
-          +
-        </button>
-        <button
-          className="button button--icon"
-          onClick={handleRename}
-          disabled={!activeAlphabet}
-          title="Rename active alphabet"
-          aria-label="Rename active alphabet"
-        >
-          ✎
-        </button>
-        <button
-          className="button button--icon button--danger"
-          onClick={handleDelete}
-          disabled={!activeAlphabet}
-          title="Delete active alphabet"
-          aria-label="Delete active alphabet"
-        >
-          ✕
-        </button>
+        {!switchOnly && (
+          <>
+            <button
+              className="button button--icon"
+              onClick={handleCreate}
+              title="New alphabet"
+              aria-label="Create new alphabet"
+            >
+              +
+            </button>
+            <button
+              className="button button--icon"
+              onClick={handleRename}
+              disabled={!activeAlphabet}
+              title="Rename active alphabet"
+              aria-label="Rename active alphabet"
+            >
+              ✎
+            </button>
+            <button
+              className="button button--icon button--danger"
+              onClick={handleDelete}
+              disabled={!activeAlphabet}
+              title="Delete active alphabet"
+              aria-label="Delete active alphabet"
+            >
+              ✕
+            </button>
+          </>
+        )}
       </div>
 
-      <div className="alphabet-selector__file-row">
-        <button
-          className="button button--ghost"
-          onClick={onExport}
-          disabled={!activeAlphabet}
-          title="Download active alphabet as a .conlang file"
-        >
-          Export
-        </button>
+      {!compact && (
+        <div className="alphabet-selector__file-row">
+          <button
+            className="button button--ghost"
+            onClick={onExport}
+            disabled={!activeAlphabet}
+            title="Download active alphabet as a .conlang file"
+          >
+            Export
+          </button>
 
-        <label className="button button--ghost" title="Load a .conlang file">
-          Import
-          <input
-            ref={importInputRef}
-            type="file"
-            accept=".conlang"
-            className="visually-hidden"
-            onChange={handleImportChange}
-          />
-        </label>
-      </div>
+          <label className="button button--ghost" title="Load a .conlang file">
+            Import
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".conlang"
+              className="visually-hidden"
+              onChange={handleImportChange}
+            />
+          </label>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,7 +2,44 @@
 
 import { useState } from "react";
 import { UNICODE_ALPHABETS } from "../../data/unicodeAlphabets";
+import { getIPAEntry } from "../../data/ipa";
 import AudioButton from "../shared/AudioButton";
+
+/**
+ * Renders the examples array for an IPA entry with bolded sound substrings.
+ * Falls back to the entry's description text if no examples exist.
+ */
+function renderExamples(entry) {
+  if (!entry) return null;
+  if (!entry.examples || entry.examples.length === 0) {
+    return (
+      <span className="char-entry__phoneme-examples">{entry.description}</span>
+    );
+  }
+  return (
+    <span className="char-entry__phoneme-examples">
+      {entry.examples.map(({ word, bold }, i) => {
+        const idx = word.indexOf(bold);
+        if (idx === -1) {
+          return (
+            <span key={i}>
+              {i > 0 ? ", " : ""}
+              {word}
+            </span>
+          );
+        }
+        return (
+          <span key={i}>
+            {i > 0 ? ", " : ""}
+            {word.slice(0, idx)}
+            <strong>{bold}</strong>
+            {word.slice(idx + bold.length)}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
 
 export default function CharacterBrowser({
   selectedAlphabetId,
@@ -34,8 +71,14 @@ export default function CharacterBrowser({
     setExpandedChar(null);
   }
 
+  // Find the expanded character's full entry for rendering the panel
+  const expandedEntry = expandedChar
+    ? activeSystem.characters.find((c) => c.char === expandedChar) ?? null
+    : null;
+
   return (
     <div className="character-browser">
+      <p className="character-browser__system-label">Writing System</p>
       <select
         className="character-browser__system-select"
         value={activeSystem.id}
@@ -68,40 +111,54 @@ export default function CharacterBrowser({
               >
                 {charEntry.char}
               </button>
-
-              {/* Phoneme list — visible only when the character is expanded */}
-              {isExpanded && (
-                <div className="char-entry__phoneme-list">
-                  {charEntry.phonemes.map((phoneme) => {
-                    const isSelected = selectedSymbols.includes(phoneme);
-                    const isDefault = phoneme === charEntry.defaultPhoneme;
-                    return (
-                      <div
-                        key={phoneme}
-                        className={`char-entry__phoneme-row${isSelected ? " char-entry__phoneme-row--selected" : ""}`}
-                      >
-                        <button
-                          className="char-entry__phoneme-pick"
-                          onClick={() => handlePickPhoneme(phoneme)}
-                          aria-pressed={isSelected}
-                        >
-                          <span className="char-entry__phoneme-symbol">/{phoneme}/</span>
-                          {isDefault && (
-                            <span className="char-entry__phoneme-default-mark" title="Most common reading">
-                              ★
-                            </span>
-                          )}
-                        </button>
-                        <AudioButton phoneme={phoneme} onPlay={onPlayPhoneme} isLoading={false} />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           );
         })}
       </div>
+
+      {/* Full-width phoneme panel renders below the grid — never clipped */}
+      {expandedEntry && (
+        <div className="char-entry__phoneme-panel">
+          <div className="char-entry__phoneme-panel-header">
+            <span className="char-entry__phoneme-panel-char">{expandedChar}</span>
+            <button
+              className="char-entry__phoneme-panel-close"
+              onClick={() => setExpandedChar(null)}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="char-entry__phoneme-panel-list">
+            {expandedEntry.phonemes.map((phoneme) => {
+              const isSelected = selectedSymbols.includes(phoneme);
+              const isDefault = phoneme === expandedEntry.defaultPhoneme;
+              const ipaEntry = getIPAEntry(phoneme);
+              return (
+                <div
+                  key={phoneme}
+                  className={`char-entry__phoneme-row${isSelected ? " char-entry__phoneme-row--selected" : ""}`}
+                >
+                  <button
+                    className="char-entry__phoneme-pick"
+                    onClick={() => handlePickPhoneme(phoneme)}
+                    aria-pressed={isSelected}
+                  >
+                    <span className="char-entry__phoneme-symbol">/{phoneme}/</span>
+                    {isDefault && (
+                      <span className="char-entry__phoneme-default-mark" title="Most common reading">
+                        ★
+                      </span>
+                    )}
+                    {renderExamples(ipaEntry)}
+                  </button>
+                  <AudioButton phoneme={phoneme} onPlay={onPlayPhoneme} isLoading={false} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

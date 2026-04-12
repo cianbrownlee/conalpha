@@ -1,5 +1,6 @@
-// Container for the Phoneme Mapper tab. Owns browse mode, selected phonemes,
-// selected writing system, and selected glyph. Wires useAudio into the browsers.
+// Container for the Phoneme Mapper tab. Owns staged phonemes and selected glyph.
+// Browse mode and writing system selection are lifted to App.jsx for persistence
+// across tab switches.
 
 import { useState } from "react";
 import AlphabetSelector from "../shared/AlphabetSelector";
@@ -7,6 +8,30 @@ import IPABrowser from "./IPABrowser";
 import CharacterBrowser from "./CharacterBrowser";
 import MappingPanel from "./MappingPanel";
 import { useAudio } from "../../hooks/useAudio";
+import { getIPAEntry } from "../../data/ipa";
+
+/** Renders bolded example words for a single IPA symbol. */
+function SelectionExamples({ phoneme }) {
+  const entry = getIPAEntry(phoneme);
+  if (!entry) return null;
+  if (!entry.examples || entry.examples.length === 0) {
+    return <span className="phoneme-mapper__selection-examples">{entry.description}</span>;
+  }
+  return (
+    <span className="phoneme-mapper__selection-examples">
+      {entry.examples.map(({ word, bold }, i) => {
+        const idx = word.indexOf(bold);
+        if (idx === -1) return <span key={i}>{i > 0 ? ", " : ""}{word}</span>;
+        return (
+          <span key={i}>
+            {i > 0 ? ", " : ""}
+            {word.slice(0, idx)}<strong>{bold}</strong>{word.slice(idx + bold.length)}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
 
 export default function PhonemeMapper({
   activeAlphabet,
@@ -17,14 +42,18 @@ export default function PhonemeMapper({
   onRenameAlphabet,
   onDeleteAlphabet,
   onUpdateGlyphPhonemes,
+  onReorderGlyphs,
   onExportActiveAlphabet,
   onExportAllAlphabets,
   onImportAlphabetFile,
+  // Lifted state for persistence across tab switches
+  browseMode,
+  onChangeBrowseMode,
+  writingSystemId,
+  onChangeWritingSystemId,
 }) {
-  const [browseMode, setBrowseMode] = useState("ipa");
   // Phonemes staged for assignment — user selects here, then clicks a glyph
   const [selectedIPASymbols, setSelectedIPASymbols] = useState([]);
-  const [selectedWritingSystemId, setSelectedWritingSystemId] = useState(null);
   // Which glyph in MappingPanel is highlighted after a successful assignment
   const [selectedGlyphId, setSelectedGlyphId] = useState(null);
 
@@ -32,7 +61,7 @@ export default function PhonemeMapper({
 
   /** Switches browse mode and clears staged phonemes to avoid stale selections. */
   function handleSwitchMode(mode) {
-    setBrowseMode(mode);
+    onChangeBrowseMode(mode);
     setSelectedIPASymbols([]);
   }
 
@@ -69,19 +98,43 @@ export default function PhonemeMapper({
 
   return (
     <div className="phoneme-mapper screen">
-      <AlphabetSelector
-        alphabets={alphabets}
-        activeAlphabetId={activeAlphabetId}
-        onSwitch={onSwitchAlphabet}
-        onCreate={onCreateAlphabet}
-        onRename={onRenameAlphabet}
-        onDelete={onDeleteAlphabet}
-        onExport={onExportActiveAlphabet}
-        onImport={onImportAlphabetFile}
-      />
+      {/* Top bar: compact switch-only alphabet selector */}
+      <div className="phoneme-mapper__top-bar">
+        <AlphabetSelector
+          alphabets={alphabets}
+          activeAlphabetId={activeAlphabetId}
+          onSwitch={onSwitchAlphabet}
+          onCreate={onCreateAlphabet}
+          onRename={onRenameAlphabet}
+          onDelete={onDeleteAlphabet}
+          onExport={onExportActiveAlphabet}
+          onImport={onImportAlphabetFile}
+          compact={true}
+          switchOnly={true}
+        />
+      </div>
 
-      {/* Mode toggle */}
-      <div className="phoneme-mapper__mode-toggle" role="group" aria-label="Browse mode">
+      {/* Selection bar — shows staged phonemes and a clear button */}
+      {hasSelection && (
+        <div className="phoneme-mapper__selection-bar">
+          <span className="phoneme-mapper__selection-label">
+            Ready to assign:{" "}
+            {selectedIPASymbols.map((s) => `/${s}/`).join(" + ")}
+            {browseMode === "character" && selectedIPASymbols.length > 0 && (
+              <SelectionExamples phoneme={selectedIPASymbols[0]} />
+            )}
+          </span>
+          <button
+            className="button button--ghost button--small"
+            onClick={() => setSelectedIPASymbols([])}
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
+      {/* Mode tabs — directly above the workspace */}
+      <div className="phoneme-mapper__mode-tabs" role="group" aria-label="Browse mode">
         <button
           className={`toggle-btn${browseMode === "ipa" ? " toggle-btn--active" : ""}`}
           onClick={() => handleSwitchMode("ipa")}
@@ -98,23 +151,7 @@ export default function PhonemeMapper({
         </button>
       </div>
 
-      {/* Selection bar — shows staged phonemes and a clear button */}
-      {hasSelection && (
-        <div className="phoneme-mapper__selection-bar">
-          <span className="phoneme-mapper__selection-label">
-            Ready to assign:{" "}
-            {selectedIPASymbols.map((s) => `/${s}/`).join(" + ")}
-          </span>
-          <button
-            className="button button--ghost button--small"
-            onClick={() => setSelectedIPASymbols([])}
-          >
-            Clear
-          </button>
-        </div>
-      )}
-
-      <div className="phoneme-mapper__workspace">
+      <div className={`phoneme-mapper__workspace${browseMode === "ipa" ? " phoneme-mapper__workspace--stacked" : ""}`}>
         {/* Left: phoneme browser */}
         <div className="phoneme-mapper__browser-panel">
           {browseMode === "ipa" ? (
@@ -125,9 +162,9 @@ export default function PhonemeMapper({
             />
           ) : (
             <CharacterBrowser
-              selectedAlphabetId={selectedWritingSystemId}
+              selectedAlphabetId={writingSystemId}
               selectedSymbols={selectedIPASymbols}
-              onSelectAlphabet={setSelectedWritingSystemId}
+              onSelectAlphabet={onChangeWritingSystemId}
               onSelectPhonemes={handleSelectPhonemes}
               onPlayPhoneme={playPhoneme}
             />
@@ -138,9 +175,12 @@ export default function PhonemeMapper({
         <div className="phoneme-mapper__mapping-panel">
           <MappingPanel
             glyphs={activeAlphabet?.glyphs ?? []}
+            alphabetId={activeAlphabetId}
             selectedGlyphId={selectedGlyphId}
             onSelectGlyph={handleSelectGlyph}
             onAssignPhonemes={onUpdateGlyphPhonemes}
+            onReorderGlyphs={onReorderGlyphs}
+            glyphSize={browseMode === "ipa" ? 96 : 72}
           />
         </div>
       </div>

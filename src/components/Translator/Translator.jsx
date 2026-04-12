@@ -3,9 +3,21 @@
 import { useState } from "react";
 import TextInput from "./TextInput";
 import ScriptOutput from "./ScriptOutput";
+import AlphabetSelector from "../shared/AlphabetSelector";
 import { convertTextToPhonemes } from "../../utils/phonetics";
 
-export default function Translator({ activeAlphabet, findGlyphByPhoneme }) {
+export default function Translator({
+  activeAlphabet,
+  alphabets,
+  activeAlphabetId,
+  onSwitchAlphabet,
+  onCreateAlphabet,
+  onRenameAlphabet,
+  onDeleteAlphabet,
+  onExportActiveAlphabet,
+  onImportAlphabetFile,
+  findGlyphByPhoneme,
+}) {
   const [inputText, setInputText] = useState("");
   const [translationResult, setTranslationResult] = useState(null);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -36,6 +48,21 @@ export default function Translator({ activeAlphabet, findGlyphByPhoneme }) {
 
   return (
     <div className="translator screen">
+      <div className="translator__top-bar">
+        <AlphabetSelector
+          alphabets={alphabets}
+          activeAlphabetId={activeAlphabetId}
+          onSwitch={onSwitchAlphabet}
+          onCreate={onCreateAlphabet}
+          onRename={onRenameAlphabet}
+          onDelete={onDeleteAlphabet}
+          onExport={onExportActiveAlphabet}
+          onImport={onImportAlphabetFile}
+          compact={true}
+          switchOnly={true}
+        />
+      </div>
+
       {!hasMappedGlyphs && activeAlphabet && (
         <p className="translator__nudge">
           Map phonemes to your glyphs in the Phoneme Mapper to see your script rendered here.

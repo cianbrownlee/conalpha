@@ -2,6 +2,7 @@
 // word list, and the sampled text paragraph. Generate button and slider live here.
 
 import { useState } from "react";
+import AlphabetSelector from "../shared/AlphabetSelector";
 import LanguageSelector from "./LanguageSelector";
 import WordGrid from "./WordGrid";
 import TextSample from "./TextSample";
@@ -10,9 +11,18 @@ import { generateLexicon, sampleTextFromLexicon } from "../../utils/lexiconGener
 
 export default function LexiconGenerator({
   activeAlphabet,
+  alphabets,
+  activeAlphabetId,
+  onSwitchAlphabet,
+  onCreateAlphabet,
+  onRenameAlphabet,
+  onDeleteAlphabet,
+  onExportActiveAlphabet,
+  onImportAlphabetFile,
   findGlyphByPhoneme,
+  selectedLanguageId,
+  onSelectLanguage,
 }) {
-  const [selectedLanguageId, setSelectedLanguageId] = useState("english");
   const [wordCount, setWordCount] = useState(40);
   const [wordList, setWordList] = useState([]);
   const [textSample, setTextSample] = useState([]);
@@ -32,10 +42,25 @@ export default function LexiconGenerator({
 
   return (
     <div className="lexicon-generator screen">
+      <div className="lexicon-generator__top-bar">
+        <AlphabetSelector
+          alphabets={alphabets}
+          activeAlphabetId={activeAlphabetId}
+          onSwitch={onSwitchAlphabet}
+          onCreate={onCreateAlphabet}
+          onRename={onRenameAlphabet}
+          onDelete={onDeleteAlphabet}
+          onExport={onExportActiveAlphabet}
+          onImport={onImportAlphabetFile}
+          compact={true}
+          switchOnly={true}
+        />
+      </div>
+
       <div className="lexicon-generator__controls">
         <LanguageSelector
           selectedLanguageId={selectedLanguageId}
-          onSelectLanguage={setSelectedLanguageId}
+          onSelectLanguage={onSelectLanguage}
         />
 
         <div className="lexicon-generator__word-count">

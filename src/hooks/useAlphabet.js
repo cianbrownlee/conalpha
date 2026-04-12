@@ -273,6 +273,21 @@ export function useAlphabet() {
   }, [activeAlphabetId]);
 
   /**
+   * Replaces the glyph array for one alphabet with a new ordered array.
+   * Called after a drag-to-reorder operation in GlyphLibrary or MappingPanel.
+   *
+   * @param {string} alphabetId
+   * @param {Object[]} orderedGlyphs - complete glyph array in the new order
+   */
+  const reorderGlyphs = useCallback((alphabetId, orderedGlyphs) => {
+    setAlphabets((prev) =>
+      prev.map((a) =>
+        a.id === alphabetId ? { ...a, glyphs: orderedGlyphs } : a
+      )
+    );
+  }, []);
+
+  /**
    * Looks up a glyph in the active alphabet by its primary phoneme.
    * Used by the translator and lexicon generator to render output.
    * Returns the glyph object, or null if no glyph is mapped to that phoneme.
@@ -373,6 +388,7 @@ export function useAlphabet() {
     updateGlyphImage,
     updateGlyphPhonemes,
     deleteGlyph,
+    reorderGlyphs,
     findGlyphByPhoneme,
     findGlyphByPhonemeInAlphabet,
 

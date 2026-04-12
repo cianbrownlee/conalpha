@@ -1,10 +1,9 @@
-// Container for the Alphabet Builder tab. Owns selectedGlyphId local state
-// and coordinates between AlphabetSelector, DrawingCanvas, and GlyphLibrary.
+// Container for the Alphabet Builder tab. Shows all alphabets as expandable sections.
+// Drawing happens in a modal. No longer uses the shared AlphabetSelector.
 
-import { useState } from "react";
-import AlphabetSelector from "../shared/AlphabetSelector";
-import DrawingCanvas from "./DrawingCanvas";
+import { useState, useRef } from "react";
 import GlyphLibrary from "./GlyphLibrary";
+import DrawingModal from "./DrawingModal";
 
 export default function AlphabetBuilder({
   activeAlphabet,
@@ -17,82 +16,182 @@ export default function AlphabetBuilder({
   onAddGlyph,
   onUpdateGlyphImage,
   onDeleteGlyph,
+  onReorderGlyphs,
   onExportActiveAlphabet,
   onExportAllAlphabets,
   onImportAlphabetFile,
 }) {
-  // null means the canvas is in "new glyph" mode; a string ID means redraw mode
-  const [selectedGlyphId, setSelectedGlyphId] = useState(null);
+  // All alphabets start expanded
+  const [expandedIds, setExpandedIds] = useState(() => new Set(alphabets.map((a) => a.id)));
+  const [modalState, setModalState] = useState({ open: false, alphabetId: null, glyphId: null });
+  const importInputRef = useRef(null);
 
-  const selectedGlyph =
-    activeAlphabet?.glyphs.find((g) => g.id === selectedGlyphId) ?? null;
+  // Keep expandedIds in sync when new alphabets are created
+  // (new alphabet IDs won't be in the initial Set)
 
-  /** Called by DrawingCanvas when the user hits Save. */
-  function handleSave(imageData) {
-    if (selectedGlyphId) {
-      // Redrawing an existing glyph — preserve its phoneme mapping
-      onUpdateGlyphImage(selectedGlyphId, imageData);
+  /** Toggles an alphabet section open or closed. */
+  function toggleSection(alphabetId) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(alphabetId)) next.delete(alphabetId);
+      else next.add(alphabetId);
+      return next;
+    });
+  }
+
+  /** Opens the drawing modal for a new glyph in the given alphabet. */
+  function handleAddGlyph(alphabetId) {
+    onSwitchAlphabet(alphabetId); // ensure onAddGlyph targets the right alphabet
+    setModalState({ open: true, alphabetId, glyphId: null });
+  }
+
+  /** Opens the drawing modal to redraw an existing glyph. */
+  function handleSelectGlyph(alphabetId, glyphId) {
+    onSwitchAlphabet(alphabetId);
+    setModalState({ open: true, alphabetId, glyphId });
+  }
+
+  function handleModalClose() {
+    setModalState({ open: false, alphabetId: null, glyphId: null });
+  }
+
+  /** Called when DrawingModal saves. Routes to add or update depending on modal state. */
+  function handleModalSave(imageData) {
+    if (modalState.glyphId) {
+      onUpdateGlyphImage(modalState.glyphId, imageData);
     } else {
-      // Brand new glyph — phonemes will be assigned in the Phoneme Mapper
       onAddGlyph({ imageData, phonemes: [], label: "" });
+      // Expand the section so the new glyph is visible
+      setExpandedIds((prev) => new Set(prev).add(modalState.alphabetId));
     }
-    setSelectedGlyphId(null);
   }
 
-  /** Called by DrawingCanvas when the user hits Clear — returns canvas to new-glyph mode. */
-  function handleClear() {
-    setSelectedGlyphId(null);
+  function handleCreate() {
+    const name = prompt("Name your new alphabet (e.g. Elvish, Runic, Cipher):");
+    if (!name?.trim()) return;
+    const created = onCreateAlphabet(name.trim());
+    // Auto-expand the new section
+    if (created?.id) {
+      setExpandedIds((prev) => new Set(prev).add(created.id));
+    }
   }
 
-  /** Toggles glyph selection: clicking the same glyph again deselects it. */
-  function handleSelectGlyph(glyphId) {
-    setSelectedGlyphId((prev) => (prev === glyphId ? null : glyphId));
+  function handleRename(alphabet) {
+    const name = prompt("Rename alphabet:", alphabet.name);
+    if (name?.trim()) onRenameAlphabet(alphabet.id, name.trim());
   }
 
-  /** Deletes a glyph and deselects it if it was loaded into the canvas. */
-  function handleDeleteGlyph(glyphId) {
-    onDeleteGlyph(glyphId);
-    if (selectedGlyphId === glyphId) setSelectedGlyphId(null);
+  function handleDelete(alphabet) {
+    if (window.confirm(`Delete "${alphabet.name}"? This cannot be undone.`)) {
+      onDeleteAlphabet(alphabet.id);
+    }
   }
+
+  function handleExport(alphabet) {
+    // Switch to target alphabet, then export the active one
+    onSwitchAlphabet(alphabet.id);
+    // exportActiveAlphabet reads activeAlphabet from state — give React one tick
+    setTimeout(onExportActiveAlphabet, 0);
+  }
+
+  function handleImportChange(e) {
+    const file = e.target.files[0];
+    if (file) onImportAlphabetFile(file);
+    e.target.value = "";
+  }
+
+  // Find the glyph being drawn (for modal title)
+  const modalAlphabet = alphabets.find((a) => a.id === modalState.alphabetId) ?? null;
+  const modalGlyph = modalAlphabet?.glyphs.find((g) => g.id === modalState.glyphId) ?? null;
 
   return (
     <div className="alphabet-builder screen">
-      <AlphabetSelector
-        alphabets={alphabets}
-        activeAlphabetId={activeAlphabetId}
-        onSwitch={onSwitchAlphabet}
-        onCreate={onCreateAlphabet}
-        onRename={onRenameAlphabet}
-        onDelete={onDeleteAlphabet}
-        onExport={onExportActiveAlphabet}
-        onImport={onImportAlphabetFile}
-      />
 
-      <div className="alphabet-builder__workspace">
-        <div className="alphabet-builder__canvas-panel">
-          <h2 className="alphabet-builder__panel-heading">
-            {selectedGlyphId ? "Redrawing glyph" : "New glyph"}
-          </h2>
-
-          {/* key forces a full remount when the selected glyph changes,
-              resetting canvas state cleanly without manual imperative logic */}
-          <DrawingCanvas
-            key={selectedGlyphId ?? "new"}
-            initialImage={selectedGlyph?.imageData ?? null}
-            onSave={handleSave}
-            onClear={handleClear}
+      {/* Top action bar */}
+      <div className="alphabet-builder__top-bar">
+        <button className="button button--primary" onClick={handleCreate}>
+          + New Alphabet
+        </button>
+        <label className="button button--ghost" title="Load a .conlang file">
+          Import
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".conlang"
+            className="visually-hidden"
+            onChange={handleImportChange}
           />
-        </div>
-
-        <div className="alphabet-builder__library-panel">
-          <GlyphLibrary
-            glyphs={activeAlphabet?.glyphs ?? []}
-            selectedGlyphId={selectedGlyphId}
-            onSelectGlyph={handleSelectGlyph}
-            onDeleteGlyph={handleDeleteGlyph}
-          />
-        </div>
+        </label>
       </div>
+
+      {/* Accordion list of all alphabets */}
+      {alphabets.length === 0 && (
+        <p className="alphabet-builder__empty">
+          No alphabets yet — create one above to get started.
+        </p>
+      )}
+
+      {alphabets.map((alphabet) => {
+        const isExpanded = expandedIds.has(alphabet.id);
+        return (
+          <div key={alphabet.id} className="alphabet-section">
+            <div
+              className="alphabet-section__header"
+              onClick={() => toggleSection(alphabet.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === "Enter" && toggleSection(alphabet.id)}
+              aria-expanded={isExpanded}
+            >
+              <span className={`alphabet-section__chevron${isExpanded ? " alphabet-section__chevron--open" : ""}`}>
+                ▶
+              </span>
+              <span className="alphabet-section__name">{alphabet.name}</span>
+              <span className="alphabet-section__meta">
+                {alphabet.glyphs.length} {alphabet.glyphs.length === 1 ? "glyph" : "glyphs"}
+              </span>
+
+              {/* Action buttons — stop click from bubbling to the toggle */}
+              <div className="alphabet-section__actions" onClick={(e) => e.stopPropagation()}>
+                <button className="button button--ghost button--small" onClick={() => handleRename(alphabet)}>
+                  Rename
+                </button>
+                <button className="button button--ghost button--small" onClick={() => handleExport(alphabet)}>
+                  Export
+                </button>
+                <button
+                  className="button button--ghost button--small button--danger"
+                  onClick={() => handleDelete(alphabet)}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+
+            {isExpanded && (
+              <div className="alphabet-section__body">
+                <GlyphLibrary
+                  glyphs={alphabet.glyphs}
+                  alphabetId={alphabet.id}
+                  onSelectGlyph={(glyphId) => handleSelectGlyph(alphabet.id, glyphId)}
+                  onDeleteGlyph={onDeleteGlyph}
+                  onAddGlyph={() => handleAddGlyph(alphabet.id)}
+                  onReorderGlyphs={onReorderGlyphs}
+                />
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Drawing modal — rendered once at the top level, controlled by modalState */}
+      <DrawingModal
+        isOpen={modalState.open}
+        initialImage={modalGlyph?.imageData ?? null}
+        glyphLabel={modalGlyph?.label ?? null}
+        onSave={handleModalSave}
+        onClose={handleModalClose}
+      />
     </div>
   );
 }

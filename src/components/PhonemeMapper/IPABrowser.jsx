@@ -4,6 +4,40 @@ import { useState } from "react";
 import { IPA_CATEGORIES, getSymbolsByCategory } from "../../data/ipa";
 import AudioButton from "../shared/AudioButton";
 
+/**
+ * Renders the examples array for an IPA entry.
+ * Each example's `bold` substring is wrapped in <strong>.
+ * Falls back to plain description text if examples is empty.
+ */
+function renderExamples(entry) {
+  if (!entry.examples || entry.examples.length === 0) {
+    return <span className="ipa-symbol__desc">{entry.description}</span>;
+  }
+  return (
+    <span className="ipa-symbol__desc">
+      {entry.examples.map(({ word, bold }, i) => {
+        const idx = word.indexOf(bold);
+        if (idx === -1) {
+          return (
+            <span key={i}>
+              {i > 0 ? ", " : ""}
+              {word}
+            </span>
+          );
+        }
+        return (
+          <span key={i}>
+            {i > 0 ? ", " : ""}
+            {word.slice(0, idx)}
+            <strong>{bold}</strong>
+            {word.slice(idx + bold.length)}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
 export default function IPABrowser({ selectedSymbols, onSelectSymbol, onPlayPhoneme }) {
   const [activeCategory, setActiveCategory] = useState("Vowels");
 
@@ -43,7 +77,7 @@ export default function IPABrowser({ selectedSymbols, onSelectSymbol, onPlayPhon
                 aria-pressed={isSelected}
               >
                 <span className="ipa-symbol__char">{entry.symbol}</span>
-                <span className="ipa-symbol__desc">{entry.description}</span>
+                {renderExamples(entry)}
               </button>
 
               <AudioButton

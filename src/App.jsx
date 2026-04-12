@@ -61,6 +61,11 @@ const TABS = [
 export default function App() {
   const [activeTab, setActiveTab] = useState("builder");
 
+  // Cross-tab persistent UI state — lives here so it survives tab switches
+  const [mapperBrowseMode, setMapperBrowseMode] = useState("ipa");
+  const [mapperWritingSystemId, setMapperWritingSystemId] = useState(null);
+  const [lexiconLanguageId, setLexiconLanguageId] = useState("english");
+
   // All alphabet state and operations come from this single hook instance.
   // Everything below receives what it needs as props.
   const alphabetHook = useAlphabet();
@@ -94,6 +99,7 @@ export default function App() {
             onAddGlyph={alphabetHook.addGlyphToActiveAlphabet}
             onUpdateGlyphImage={alphabetHook.updateGlyphImage}
             onDeleteGlyph={alphabetHook.deleteGlyph}
+            onReorderGlyphs={alphabetHook.reorderGlyphs}
           />
         );
 
@@ -102,6 +108,11 @@ export default function App() {
           <PhonemMapperScreen
             {...sharedAlphabetProps}
             onUpdateGlyphPhonemes={alphabetHook.updateGlyphPhonemes}
+            onReorderGlyphs={alphabetHook.reorderGlyphs}
+            browseMode={mapperBrowseMode}
+            onChangeBrowseMode={setMapperBrowseMode}
+            writingSystemId={mapperWritingSystemId}
+            onChangeWritingSystemId={setMapperWritingSystemId}
           />
         );
 
@@ -110,6 +121,8 @@ export default function App() {
           <LexiconGeneratorScreen
             {...sharedAlphabetProps}
             findGlyphByPhoneme={alphabetHook.findGlyphByPhoneme}
+            selectedLanguageId={lexiconLanguageId}
+            onSelectLanguage={setLexiconLanguageId}
           />
         );
 
