@@ -62,9 +62,13 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("builder");
 
   // Cross-tab persistent UI state — lives here so it survives tab switches
-  const [mapperBrowseMode, setMapperBrowseMode] = useState("ipa");
+  const [mapperBrowseMode, setMapperBrowseMode] = useState("character");
   const [mapperWritingSystemId, setMapperWritingSystemId] = useState(null);
   const [lexiconLanguageId, setLexiconLanguageId] = useState("english");
+  const [lexiconWordCount, setLexiconWordCount] = useState(40);
+  const [lexiconSampleLength, setLexiconSampleLength] = useState(64);
+  const [lexiconWordList, setLexiconWordList] = useState([]);
+  const [lexiconTextSample, setLexiconTextSample] = useState([]);
 
   // All alphabet state and operations come from this single hook instance.
   // Everything below receives what it needs as props.
@@ -123,6 +127,14 @@ export default function App() {
             findGlyphByPhoneme={alphabetHook.findGlyphByPhoneme}
             selectedLanguageId={lexiconLanguageId}
             onSelectLanguage={setLexiconLanguageId}
+            wordCount={lexiconWordCount}
+            onChangeWordCount={setLexiconWordCount}
+            sampleLength={lexiconSampleLength}
+            onChangeSampleLength={setLexiconSampleLength}
+            wordList={lexiconWordList}
+            onChangeWordList={setLexiconWordList}
+            textSample={lexiconTextSample}
+            onChangeTextSample={setLexiconTextSample}
           />
         );
 

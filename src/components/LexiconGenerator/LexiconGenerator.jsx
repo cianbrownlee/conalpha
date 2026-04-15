@@ -1,7 +1,6 @@
 // Container for the Lexicon Generator tab. Owns language selection, word count,
 // word list, and the sampled text paragraph. Generate button and slider live here.
 
-import { useState } from "react";
 import AlphabetSelector from "../shared/AlphabetSelector";
 import LanguageSelector from "./LanguageSelector";
 import WordGrid from "./WordGrid";
@@ -22,11 +21,15 @@ export default function LexiconGenerator({
   findGlyphByPhoneme,
   selectedLanguageId,
   onSelectLanguage,
+  wordCount,
+  onChangeWordCount,
+  sampleLength,
+  onChangeSampleLength,
+  wordList,
+  onChangeWordList,
+  textSample,
+  onChangeTextSample,
 }) {
-  const [wordCount, setWordCount] = useState(40);
-  const [sampleLength, setSampleLength] = useState(64);
-  const [wordList, setWordList] = useState([]);
-  const [textSample, setTextSample] = useState([]);
 
   const hasMappedGlyphs =
     (activeAlphabet?.glyphs ?? []).some((g) => g.phonemes && g.phonemes.length > 0);
@@ -37,8 +40,8 @@ export default function LexiconGenerator({
     const profile = getLanguageProfile(selectedLanguageId);
     if (!profile) return;
     const result = generateLexicon(activeAlphabet, profile, wordCount);
-    setWordList(result);
-    setTextSample(sampleTextFromLexicon(result, sampleLength));
+    onChangeWordList(result);
+    onChangeTextSample(sampleTextFromLexicon(result, sampleLength));
   }
 
   return (
@@ -75,7 +78,7 @@ export default function LexiconGenerator({
             max={150}
             step={5}
             value={wordCount}
-            onChange={(e) => setWordCount(Number(e.target.value))}
+            onChange={(e) => onChangeWordCount(Number(e.target.value))}
             className="lexicon-generator__count-slider"
           />
         </div>
@@ -91,7 +94,7 @@ export default function LexiconGenerator({
             max={200}
             step={4}
             value={sampleLength}
-            onChange={(e) => setSampleLength(Number(e.target.value))}
+            onChange={(e) => onChangeSampleLength(Number(e.target.value))}
             className="lexicon-generator__count-slider"
           />
         </div>

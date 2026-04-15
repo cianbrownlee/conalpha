@@ -157,7 +157,7 @@ export default function AlphabetBuilder({
                   Rename
                 </button>
                 <button className="button button--ghost button--small" onClick={() => handleExport(alphabet)}>
-                  Export
+                  Download
                 </button>
                 <button
                   className="button button--ghost button--small button--danger"
