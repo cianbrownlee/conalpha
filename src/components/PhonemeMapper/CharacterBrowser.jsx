@@ -62,6 +62,8 @@ export default function CharacterBrowser({
 
   /** Clicking a character toggles its phoneme list open/closed. */
   function handleToggleChar(char) {
+    // Opening a different character — clear staged phonemes so the old highlight goes away
+    if (expandedChar !== char) onSelectPhonemes([]);
     setExpandedChar((prev) => (prev === char ? null : char));
   }
 
