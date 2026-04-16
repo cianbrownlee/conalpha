@@ -1,4 +1,4 @@
-# Conlang Studio — Project Specification
+# ConAlpha — Project Specification
 
 ## What This Is
 

@@ -2,7 +2,7 @@
 
 /**
  * App.jsx
- * The top-level shell of Conlang Studio. Responsible for:
+ * The top-level shell of ConAlpha. Responsible for:
  *   - Instantiating the useAlphabet hook (single source of truth for all alphabet state)
  *   - Rendering the top navigation tabs
  *   - Rendering the active screen based on the selected tab
@@ -159,7 +159,7 @@ export default function App() {
   function renderEmptyState() {
     return (
       <div className="empty-state">
-        <h2 className="empty-state__heading">Welcome to Conlang Studio</h2>
+        <h2 className="empty-state__heading">Welcome to ConAlpha</h2>
         <p className="empty-state__body">
           Create your first alphabet to get started. You can draw your own glyphs,
           map them to phonetic sounds, generate words, and translate text into your
@@ -193,7 +193,7 @@ export default function App() {
       <header className="app__header">
         <div className="app__header-inner">
           <div className="app__wordmark">
-            <h1 className="app__title">Conlang Studio</h1>
+            <h1 className="app__title">ConAlpha</h1>
             <p className="app__subtitle">Build · Map · Generate · Translate</p>
           </div>
 

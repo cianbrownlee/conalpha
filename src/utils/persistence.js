@@ -12,10 +12,10 @@
  */
 
 // The key used for all localStorage reads and writes.
-const STORAGE_KEY = "conlang_studio_alphabets";
+const STORAGE_KEY = "conalpha_alphabets";
 
 // The key used to remember which alphabet was active when the user left.
-const ACTIVE_ID_KEY = "conlang_studio_active_id";
+const ACTIVE_ID_KEY = "conalpha_active_id";
 
 // The file extension used for exported alphabet files.
 const FILE_EXTENSION = ".conlang";
@@ -85,7 +85,7 @@ export function saveActiveAlphabetId(id) {
 }
 
 /**
- * Wipes all conlang studio data from localStorage.
+ * Wipes all ConAlpha data from localStorage.
  * Used for a full reset. Not exposed in the UI by default — add with care.
  */
 export function clearAllStorage() {
@@ -213,7 +213,7 @@ function validateImportedFile(parsed) {
   }
 
   if (!parsed.formatVersion) {
-    throw new Error("File is missing a format version. It may be from an incompatible version of Conlang Studio.");
+    throw new Error("File is missing a format version. It may be from an incompatible version of ConAlpha.");
   }
 
   // Single alphabet export
