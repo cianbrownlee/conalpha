@@ -47,6 +47,7 @@ export default function CharacterBrowser({
   onSelectAlphabet,
   onSelectPhonemes,
   onPlayPhoneme,
+  loadingSymbol,
 }) {
   // Which character card is expanded to show its phoneme options
   const [expandedChar, setExpandedChar] = useState(null);
@@ -154,7 +155,7 @@ export default function CharacterBrowser({
                     )}
                     {renderExamples(ipaEntry)}
                   </button>
-                  <AudioButton phoneme={phoneme} onPlay={onPlayPhoneme} isLoading={false} />
+                  <AudioButton phoneme={phoneme} onPlay={onPlayPhoneme} isLoading={loadingSymbol === phoneme} />
                 </div>
               );
             })}

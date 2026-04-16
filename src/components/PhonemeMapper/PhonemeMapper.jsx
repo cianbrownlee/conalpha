@@ -57,7 +57,7 @@ export default function PhonemeMapper({
   // Which glyph in MappingPanel is highlighted after a successful assignment
   const [selectedGlyphId, setSelectedGlyphId] = useState(null);
 
-  const { playPhoneme } = useAudio();
+  const { playPhoneme, loadingSymbol } = useAudio();
 
   /** Switches browse mode and clears staged phonemes to avoid stale selections. */
   function handleSwitchMode(mode) {
@@ -136,18 +136,18 @@ export default function PhonemeMapper({
       {/* Mode tabs — directly above the workspace */}
       <div className="phoneme-mapper__mode-tabs" role="group" aria-label="Browse mode">
         <button
-          className={`toggle-btn${browseMode === "ipa" ? " toggle-btn--active" : ""}`}
-          onClick={() => handleSwitchMode("ipa")}
-          aria-pressed={browseMode === "ipa"}
-        >
-          Browse by IPA
-        </button>
-        <button
           className={`toggle-btn${browseMode === "character" ? " toggle-btn--active" : ""}`}
           onClick={() => handleSwitchMode("character")}
           aria-pressed={browseMode === "character"}
         >
           Browse by Character
+        </button>
+        <button
+          className={`toggle-btn${browseMode === "ipa" ? " toggle-btn--active" : ""}`}
+          onClick={() => handleSwitchMode("ipa")}
+          aria-pressed={browseMode === "ipa"}
+        >
+          Browse by IPA
         </button>
       </div>
 
@@ -159,6 +159,7 @@ export default function PhonemeMapper({
               selectedSymbols={selectedIPASymbols}
               onSelectSymbol={handleSelectSymbol}
               onPlayPhoneme={playPhoneme}
+              loadingSymbol={loadingSymbol}
             />
           ) : (
             <CharacterBrowser
@@ -167,6 +168,7 @@ export default function PhonemeMapper({
               onSelectAlphabet={onChangeWritingSystemId}
               onSelectPhonemes={handleSelectPhonemes}
               onPlayPhoneme={playPhoneme}
+              loadingSymbol={loadingSymbol}
             />
           )}
         </div>

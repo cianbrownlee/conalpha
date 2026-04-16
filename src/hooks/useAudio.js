@@ -4,14 +4,16 @@
  * useAudio.js
  * Hook for playing IPA audio samples from public/audio/ipa/.
  * Audio files are loaded on demand and cached so they don't reload on
- * every play. Uses HTML Audio elements — no Web Speech API.
+ * every play. Uses HTML Audio elements — no Web Speech API for primary playback.
+ *
+ * Fallback: if the local audio file is missing (not yet sourced), falls back
+ * to the Web Speech API speaking the phoneme's description word (e.g. "judge"
+ * for /dʒ/). This gives useful audio feedback until real recordings are added.
+ * Once a file exists at public/audio/ipa/<symbol>.mp3, it takes priority.
  *
  * Usage:
- *   const { playPhoneme, isLoading } = useAudio();
- *   playPhoneme("dʒ"); // plays public/audio/ipa/dʒ.mp3
- *
- * If an audio file doesn't exist yet (samples not yet sourced), the
- * error is caught silently and nothing plays. No UI disruption.
+ *   const { playPhoneme, isLoading, loadingSymbol } = useAudio();
+ *   playPhoneme("dʒ"); // plays public/audio/ipa/dʒ.mp3, or speaks "judge"
  */
 
 import { useState, useRef, useCallback } from "react";
@@ -25,7 +27,7 @@ export function useAudio() {
   // useRef so the cache persists across renders without causing re-renders
   const audioCache = useRef({});
 
-  // Tracks which symbol is currently loading (for UI feedback if needed)
+  // Tracks which symbol is currently loading (for UI feedback)
   const [loadingSymbol, setLoadingSymbol] = useState(null);
 
   /**
@@ -44,7 +46,8 @@ export function useAudio() {
 
   /**
    * Loads an Audio object for a given IPA symbol, using the cache if available.
-   * Returns a promise that resolves to the Audio element, or null on failure.
+   * Returns a promise that resolves to the Audio element, or null if the file
+   * doesn't exist or can't be loaded.
    *
    * @param {string} symbol
    * @returns {Promise<HTMLAudioElement|null>}
@@ -67,7 +70,7 @@ export function useAudio() {
       }, { once: true });
 
       audio.addEventListener("error", () => {
-        // File not found or not yet sourced — fail silently
+        // File not found or not yet sourced
         resolve(null);
       }, { once: true });
 
@@ -76,9 +79,32 @@ export function useAudio() {
   }
 
   /**
+   * Fallback: uses the Web Speech API to speak the phoneme's description word
+   * (e.g. "judge" for /dʒ/) when the local audio file isn't available yet.
+   * This is removed automatically once the real file exists.
+   *
+   * @param {string} symbol
+   */
+  function speakFallback(symbol) {
+    if (!window.speechSynthesis) return;
+    const entry = getIPAEntry(symbol);
+    if (!entry) return;
+    // Speak the first example word — this is exactly what the IPABrowser shows
+    // on screen first, so what you hear matches what you read.
+    // Fall back to description if no examples exist.
+    const word = entry.examples?.[0]?.word ?? entry.description;
+    if (!word) return;
+    const utterance = new SpeechSynthesisUtterance(word);
+    utterance.rate = 0.85;
+    utterance.lang = "en-US";
+    window.speechSynthesis.cancel(); // stop anything already speaking
+    window.speechSynthesis.speak(utterance);
+  }
+
+  /**
    * Plays the audio sample for a given IPA symbol.
-   * Stops any currently playing sample first to prevent overlap.
-   * Does nothing if the audio file doesn't exist.
+   * Tries the local recorded file first; falls back to Web Speech API if the
+   * file isn't found. Does nothing if neither is available.
    *
    * @param {string} symbol - IPA symbol to play
    */
@@ -89,7 +115,8 @@ export function useAudio() {
       const audio = await loadAudio(symbol);
 
       if (!audio) {
-        setLoadingSymbol(null);
+        // Local file not available yet — use speech fallback
+        speakFallback(symbol);
         return;
       }
 

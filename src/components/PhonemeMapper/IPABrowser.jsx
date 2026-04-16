@@ -38,7 +38,7 @@ function renderExamples(entry) {
   );
 }
 
-export default function IPABrowser({ selectedSymbols, onSelectSymbol, onPlayPhoneme }) {
+export default function IPABrowser({ selectedSymbols, onSelectSymbol, onPlayPhoneme, loadingSymbol }) {
   const [activeCategory, setActiveCategory] = useState("Vowels");
 
   const symbols = getSymbolsByCategory(activeCategory);
@@ -83,7 +83,7 @@ export default function IPABrowser({ selectedSymbols, onSelectSymbol, onPlayPhon
               <AudioButton
                 phoneme={entry.symbol}
                 onPlay={onPlayPhoneme}
-                isLoading={false}
+                isLoading={loadingSymbol === entry.symbol}
               />
             </div>
           );
